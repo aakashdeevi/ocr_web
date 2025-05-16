@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Img2Txt</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              100: '#d1d5db',
+              200: '#9ca3af',
+              300: '#6b7280',
+              400: '#4b5563',
+              500: '#374151',
+              600: '#1f2937',
+              700: '#111827',
+              800: '#0f172a',
+              900: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-b from-white to-purple-50 dark:from-dark-800 dark:to-dark-900 text-center text-gray-900 dark:text-gray-100">
+
+  <!-- Dark Mode Toggle -->
+  <div class="absolute top-4 right-4">
+    <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-dark-600">
+      <span id="darkIcon" class="hidden">🌙</span>
+      <span id="lightIcon">☀️</span>
+    </button>
+  </div>
+
+  <div class="container mx-auto px-4 py-10">
+    <div class="text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg leading-tight py-2">Img2Txt</div>
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Extract text from images instantly with powerful OCR technology.</p>
+
+    <!-- Tabs -->
+    <div class="flex justify-center bg-gray-100 dark:bg-dark-600 rounded-full p-1 w-fit mx-auto mb-8">
+      <button onclick="switchTab('uploadTab')" id="uploadTabBtn" class="px-6 py-2 rounded-full font-medium text-sm bg-white dark:bg-dark-700 text-black dark:text-white shadow transition-all">📤 Upload Image</button>
+      <button onclick="switchTab('resultsTab')" id="resultsTabBtn" class="px-6 py-2 rounded-full font-medium text-sm text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-all">📄 View Results</button>
+    </div>
+
+    <!-- Upload Tab -->
+    <div id="uploadTab" class="block">
+      <div class="upload-box border-2 border-dashed border-gray-300 dark:border-dark-500 bg-white dark:bg-dark-700 p-10 rounded-xl cursor-pointer w-3/4 max-w-xl mx-auto mb-6" onclick="document.getElementById('fileInput').click()">
+        <div id="uploadIcon" class="text-5xl text-purple-400 mb-4">⬆️</div>
+        <p id="uploadText1" class="font-semibold text-lg">Click to browse files</p>
+        <p id="uploadText2" class="text-gray-400 dark:text-gray-500 text-sm mt-2">📷 JPG, PNG, GIF, BMP, etc.</p>
+        <img id="imagePreview" class="hidden max-h-64 mx-auto mt-4" />
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" id="uploadForm" class="flex flex-col items-center">
+        <input type="file" name="file" id="fileInput" required class="hidden" onchange="handleFileSelect(event)" accept="image/*" />
+        
+        <!-- Extract Button -->
+        <button type="button" id="extractBtn" onclick="startProcessing()" class="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg shadow hidden hover:bg-purple-700 transition-all">
+          🔍 Extract Text
+        </button>
+
+        <!-- Progress Bar -->
+        <div id="progressContainer" class="w-3/4 max-w-md mt-6 hidden">
+          <div class="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-4">
+            <div id="progressBar" class="bg-purple-600 h-4 rounded-full transition-all duration-500" style="width: 0%;"></div>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Processing image, please wait...</p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Results Tab -->
+    <div id="resultsTab" class="hidden">
+      {% if text %}
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Extracted Text:</h3>
+        <div class="relative max-w-2xl mx-auto">
+          <textarea id="ocrText" readonly rows="10" class="w-full p-4 border rounded-lg resize-y bg-white dark:bg-dark-700 dark:border-dark-600">{{ text }}</textarea>
+          <button type="button" onclick="copyText()" class="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded text-sm">Copy</button>
+        </div>
+      {% else %}
+        <p class="text-gray-500 dark:text-gray-400">No text extracted yet. Upload an image to begin.</p>
+      {% endif %}
+    </div>
+
+    <div class="features mt-12 flex flex-wrap justify-center gap-6">
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">🖼️</div>
+        <h3 class="text-lg font-semibold">Multiple Formats</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Supports JPG, PNG, GIF, BMP, and more.</p>
+      </div>
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">📄</div>
+        <h3 class="text-lg font-semibold">Accurate OCR</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Advanced OCR for precise recognition.</p>
+      </div>
+      <div class="feature-card bg-white dark:bg-dark-700 shadow rounded-xl p-6 w-64 transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+        <div class="text-3xl mb-2">📋</div>
+        <h3 class="text-lg font-semibold">Easy Copy</h3>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Copy the extracted text in one click.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkIcon');
+    const lightIcon = document.getElementById('lightIcon');
+    
+    if (localStorage.getItem('darkMode') === 'enabled') {
+      document.documentElement.classList.add('dark');
+      darkIcon.classList.remove('hidden');
+      lightIcon.classList.add('hidden');
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      
+      if (document.documentElement.classList.contains('dark')) {
+        localStorage.setItem('darkMode', 'enabled');
+        darkIcon.classList.remove('hidden');
+        lightIcon.classList.add('hidden');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+        darkIcon.classList.add('hidden');
+        lightIcon.classList.remove('hidden');
+      }
+    });
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imagePreview = document.getElementById('imagePreview');
+          imagePreview.src = e.target.result;
+          imagePreview.classList.remove('hidden');
+          
+          // Update upload box text
+          document.getElementById('uploadIcon').classList.add('hidden');
+          document.getElementById('uploadText1').textContent = file.name;
+          document.getElementById('uploadText2').textContent = `${(file.size / 1024).toFixed(2)} KB`;
+          
+          // Show extract button
+          document.getElementById('extractBtn').classList.remove('hidden');
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.getElementById('uploadTab').classList.add('hidden');
+      document.getElementById('resultsTab').classList.add('hidden');
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.getElementById('uploadTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+      document.getElementById('resultsTabBtn').classList.remove('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+
+      if (tabId === 'uploadTab') {
+        document.getElementById('uploadTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('resultsTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      } else {
+        document.getElementById('resultsTabBtn').classList.add('bg-white', 'dark:bg-dark-700', 'text-black', 'dark:text-white', 'shadow');
+        document.getElementById('uploadTabBtn').classList.add('text-gray-600', 'dark:text-gray-300');
+      }
+    }
+
+    function enableExtractBtn() {
+      document.getElementById('extractBtn').classList.remove('hidden');
+    }
+
+    function startProcessing() {
+      document.getElementById('progressContainer').classList.remove('hidden');
+      animateProgressBar(() => {
+        // Immediately submit the form when progress completes
+        document.getElementById('uploadForm').submit();
+      });
+    }
+
+    function animateProgressBar(callback) {
+      const progressBar = document.getElementById("progressBar");
+      let width = 0;
+      const interval = setInterval(() => {
+        if (width >= 100) {
+          clearInterval(interval);
+          if (callback) callback();
+        } else {
+          width += 5;
+          progressBar.style.width = width + "%";
+        }
+      }, 50); // Faster animation (1 second total)
+    }
+
+    function copyText() {
+      const textArea = document.getElementById("ocrText");
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      
+      // Show a nice toast notification instead of alert
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg';
+      toast.textContent = 'Text copied to clipboard!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    window.onload = function() {
+      const ocrTextArea = document.getElementById('ocrText');
+      if (ocrTextArea && ocrTextArea.value.trim() !== "") {
+        switchTab('resultsTab');
+      } else {
+        switchTab('uploadTab');
+      }
+    }
+  </script>
+</body>
+</html>
