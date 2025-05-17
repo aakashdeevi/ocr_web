@@ -6,7 +6,7 @@ from flask import Flask, request, render_template, redirect, url_for
 from difflib import SequenceMatcher
 
 # === Configuration ===
-API_KEY = 'K85017367888957'
+API_KEY = os.environ.get('API_KEY', 'K85017367888957') 
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "processed_image.jpg")
 
